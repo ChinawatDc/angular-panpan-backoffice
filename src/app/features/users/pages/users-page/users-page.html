@@ -1,0 +1,159 @@
+<div class="users">
+  <!-- Header -->
+  <div class="head">
+    <div class="title">
+      <div class="icon">
+        <lucide-icon [img]="UsersIcon" size="20"></lucide-icon>
+      </div>
+      <div>
+        <h2>Users</h2>
+        <p class="sub">Manage users, roles and access</p>
+      </div>
+    </div>
+
+    <div class="head-actions">
+      <!-- ✅ Create -->
+      <button class="btn primary" (click)="openCreate()">
+        <lucide-icon [img]="PlusIcon" size="16"></lucide-icon>
+        Create User
+      </button>
+
+      <button class="btn" (click)="load()" [disabled]="loading()">
+        <lucide-icon [img]="RefreshIcon" size="16"></lucide-icon>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar card">
+    <div class="search">
+      <lucide-icon class="search-ic" [img]="SearchIcon" size="16"></lucide-icon>
+      <input [ngModel]="q()" (ngModelChange)="setQuery($event)" (keyup.enter)="search()"
+        placeholder="Search by name or email..." />
+    </div>
+
+    <div class="meta">
+      <span class="badge">{{ rangeText() }}</span>
+      <span class="badge">Page {{ page() }} / {{ totalPages() }}</span>
+      <button class="btn ghost" (click)="search()" [disabled]="loading()">Search</button>
+      <button class="btn ghost" (click)="reset()" [disabled]="loading()">Reset</button>
+    </div>
+  </div>
+
+  <div class="error" *ngIf="error()">{{ error() }}</div>
+
+  <!-- Table Card -->
+  <div class="card table-card">
+    <div class="skeleton" *ngIf="loading()">
+      <div class="sk-row" *ngFor="let _ of [1,2,3,4,5,6]"></div>
+    </div>
+
+    <div class="empty" *ngIf="!loading() && !error() && items().length === 0">
+      <div class="empty-ic">
+        <lucide-icon [img]="UsersIcon" size="28"></lucide-icon>
+      </div>
+      <div class="empty-title">No users found</div>
+      <div class="empty-sub">Try another keyword or reset the search.</div>
+      <button class="btn" (click)="reset()">Reset</button>
+    </div>
+
+    <table *ngIf="!loading() && !error() && items().length > 0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th style="width: 140px;">Role</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let u of items()">
+          <td>
+            <div class="cell-main">
+              <div class="avatar">{{ u.name.slice(0, 1).toUpperCase() }}</div>
+              <div class="cell-text">
+                <div class="primary-text">{{ u.name }}</div>
+                <div class="secondary">{{ u.id }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="primary-text">{{ u.email }}</td>
+          <td>
+            <span class="pill" [class.good]="u.role === 'admin'">
+              <lucide-icon [img]="RoleIcon" size="14"></lucide-icon>
+              {{ u.role }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pager -->
+  <div class="pager">
+    <button class="btn ghost" (click)="prev()" [disabled]="!canPrev()">
+      <lucide-icon [img]="PrevIcon" size="16"></lucide-icon>
+      Prev
+    </button>
+
+    <div class="pager-mid">
+      <span class="badge">{{ rangeText() }}</span>
+    </div>
+
+    <button class="btn ghost" (click)="next()" [disabled]="!canNext()">
+      Next
+      <lucide-icon [img]="NextIcon" size="16"></lucide-icon>
+    </button>
+  </div>
+
+  <!-- ✅ Create Modal -->
+  <div class="modal-backdrop" *ngIf="showCreate()" (click)="closeCreate()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <div class="modal-title">
+          <div class="modal-ic">
+            <lucide-icon [img]="PlusIcon" size="18"></lucide-icon>
+          </div>
+          <div>
+            <div class="t1">Create User</div>
+            <div class="t2">Add a new user to the system</div>
+          </div>
+        </div>
+
+        <button class="icon-btn" (click)="closeCreate()" [disabled]="createLoading()">
+          <lucide-icon [img]="CloseIcon" size="18"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <label class="field">
+          <span>Name</span>
+          <input [ngModel]="formName()" (ngModelChange)="formName.set($event)" placeholder="e.g. John Doe" />
+        </label>
+
+        <label class="field">
+          <span>Email</span>
+          <input [ngModel]="formEmail()" (ngModelChange)="formEmail.set($event)" placeholder="e.g. john@demo.dev" />
+        </label>
+
+        <label class="field">
+          <span>Role</span>
+          <select [ngModel]="formRole()" (ngModelChange)="formRole.set($event)">
+            <option value="staff">staff</option>
+            <option value="admin">admin</option>
+          </select>
+        </label>
+
+        <div class="error" *ngIf="createError()">{{ createError() }}</div>
+      </div>
+
+      <div class="modal-foot">
+        <button class="btn ghost" (click)="closeCreate()" [disabled]="createLoading()">Cancel</button>
+        <button class="btn primary" (click)="submitCreate()" [disabled]="createLoading()">
+          {{ createLoading() ? 'Creating...' : 'Create' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

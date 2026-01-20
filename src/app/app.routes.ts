@@ -2,8 +2,6 @@ import { Routes } from '@angular/router';
 import { PublicLayout } from './core/layout/public-layout/public-layout';
 import { AdminLayout } from './core/layout/admin-layout/admin-layout';
 import { authGuard } from './core/auth/auth.guard';
-// import { permissionGuard } from './core/auth/permission.guard'; // ใช้ Day ถัดไป
-
 export const routes: Routes = [
   // default
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -34,16 +32,13 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.routes')
             .then((m) => m.DASHBOARD_ROUTES),
       },
+      {
+        path: 'users',
+        loadChildren: () =>
+          import('./features/users/users.routes')
+            .then(m => m.USERS_ROUTES),
+      },
 
-      // 🔒 ตัวอย่าง route สำหรับ Day 4–5 (users)
-      // {
-      //   path: 'users',
-      //   canMatch: [permissionGuard],
-      //   data: { roles: ['admin'] },
-      //   loadChildren: () =>
-      //     import('./features/users/users.routes')
-      //       .then((m) => m.USERS_ROUTES),
-      // },
     ],
   },
 

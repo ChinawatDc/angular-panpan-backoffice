@@ -58,19 +58,23 @@ export class AuthService {
     this.state.update((s) => ({ ...s, loading: true }));
     try {
       const res = await firstValueFrom(this.api.login({ email, password }));
+
       const tokens: AuthTokens = {
         accessToken: res.accessToken,
         refreshToken: res.refreshToken,
         expiresAt: Date.now() + res.expiresInSec * 1000,
       };
+
       TokenStorage.set(tokens);
       this.state.set({ user: res.user, tokens, loading: false });
-      await this.router.navigateByUrl('/admin');
+
+      this.router.navigateByUrl('/admin'); // ไม่ต้อง await ก็ได้
     } catch (e) {
       this.state.update((s) => ({ ...s, loading: false }));
       throw e;
     }
   }
+
 
   logout() {
     TokenStorage.clear();

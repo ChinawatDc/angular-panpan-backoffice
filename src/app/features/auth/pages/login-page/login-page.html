@@ -16,7 +16,7 @@
     {{ auth.loading() ? 'Logging in...' : 'Login' }}
   </button>
 
-  <p class="error" *ngIf="error">{{ error }}</p>
+  <p class="error" *ngIf="error()">{{ error() }}</p>
 
   <p class="hint">
     Demo: <b>admin@panpan.dev</b> / <b>1234</b>

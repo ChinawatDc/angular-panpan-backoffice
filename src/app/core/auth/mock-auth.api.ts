@@ -23,7 +23,6 @@ export class MockAuthApi {
   private validRefreshTokens = new Set<string>();
 
   login(body: LoginRequest): Observable<LoginResponse> {
-    // demo credential
     if (body.email === 'admin@panpan.dev' && body.password === '1234') {
       const accessToken = this.makeToken('access');
       const refreshToken = this.makeToken('refresh');

@@ -1,4 +1,3 @@
-import { inject } from '@angular/core';
 import {
   HttpErrorResponse,
   HttpEvent,
@@ -18,7 +17,7 @@ const MOCK_USER = {
   roles: ['admin'],
 };
 
-function unauthorized(msg = 'UNAUTHORIZED') {
+function unauthorized(msg = 'UNAUTHORIZED'): Observable<never> {
   return throwError(
     () =>
       new HttpErrorResponse({
@@ -29,41 +28,60 @@ function unauthorized(msg = 'UNAUTHORIZED') {
   );
 }
 
+function notFound(url: string): Observable<never> {
+  return throwError(
+    () =>
+      new HttpErrorResponse({
+        status: 404,
+        statusText: 'MOCK_NOT_FOUND',
+        error: { message: 'MOCK_NOT_FOUND', url },
+      })
+  );
+}
+
 export const mockApiInterceptor: HttpInterceptorFn = (
-  req: HttpRequest<any>,
+  req: HttpRequest<unknown>,
   next: HttpHandlerFn
-): Observable<HttpEvent<any>> => {
+): Observable<HttpEvent<unknown>> => {
   // mock เฉพาะ /api/*
   if (!req.url.startsWith(ENV.apiBaseUrl)) return next(req);
 
-  // ===== helper: check auth =====
   const tokens = TokenStorage.get();
   const authHeader = req.headers.get('Authorization') ?? '';
   const hasBearer = authHeader.startsWith('Bearer ');
   const tokenLooksOk = authHeader.includes('access_');
-
-  // mock server rule: ถ้า token หมดอายุ -> 401
   const isExpired = !tokens || tokens.expiresAt <= Date.now();
+
+  const requireAuth = () => {
+    if (!hasBearer || !tokenLooksOk) return unauthorized('NO_TOKEN');
+    if (isExpired) return unauthorized('TOKEN_EXPIRED');
+    return null; // OK
+  };
 
   // ===== Routes =====
 
   // GET /api/health (public)
   if (req.method === 'GET' && req.url === `${ENV.apiBaseUrl}/health`) {
-    return of(new HttpResponse({ status: 200, body: { ok: true, ts: Date.now() } })).pipe(delay(150));
+    return of(
+      new HttpResponse({
+        status: 200,
+        body: { ok: true, ts: Date.now() },
+      })
+    ).pipe(delay(150));
   }
 
   // GET /api/me (protected)
   if (req.method === 'GET' && req.url === `${ENV.apiBaseUrl}/me`) {
-    if (!hasBearer || !tokenLooksOk) return unauthorized('NO_TOKEN');
-    if (isExpired) return unauthorized('TOKEN_EXPIRED');
+    const err = requireAuth();
+    if (err) return err;
 
-    return of(new HttpResponse({ status: 200, body: MOCK_USER })).pipe(delay(250));
+    return of(new HttpResponse({ status: 200, body: MOCK_USER })).pipe(delay(200));
   }
 
   // GET /api/dashboard/summary (protected)
   if (req.method === 'GET' && req.url === `${ENV.apiBaseUrl}/dashboard/summary`) {
-    if (!hasBearer || !tokenLooksOk) return unauthorized('NO_TOKEN');
-    if (isExpired) return unauthorized('TOKEN_EXPIRED');
+    const err = requireAuth();
+    if (err) return err;
 
     return of(
       new HttpResponse({
@@ -75,16 +93,48 @@ export const mockApiInterceptor: HttpInterceptorFn = (
           activeUsers: 12,
         },
       })
+    ).pipe(delay(250));
+  }
+
+  // GET /api/users (protected) - server-side paging/search
+  if (req.method === 'GET' && req.url.startsWith(`${ENV.apiBaseUrl}/users`)) {
+    const err = requireAuth();
+    if (err) return err;
+
+    const params = req.params;
+    const q = (params.get('q') ?? '').toLowerCase();
+    const page = +(params.get('page') ?? 1);
+    const limit = +(params.get('limit') ?? 10);
+
+    const all = Array.from({ length: 42 }).map((_, i) => ({
+      id: `u_${i + 1}`,
+      name: `User ${i + 1}`,
+      email: `user${i + 1}@demo.dev`,
+      role: i % 3 === 0 ? 'admin' : 'staff',
+    }));
+
+    const filtered = all.filter(
+      (u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+    );
+
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(50, Math.max(1, limit));
+    const start = (safePage - 1) * safeLimit;
+    const items = filtered.slice(start, start + safeLimit);
+
+    return of(
+      new HttpResponse({
+        status: 200,
+        body: {
+          items,
+          total: filtered.length,
+          page: safePage,
+          limit: safeLimit,
+        },
+      })
     ).pipe(delay(300));
   }
 
-  // Unknown mock route -> 404
-  return throwError(
-    () =>
-      new HttpErrorResponse({
-        status: 404,
-        statusText: 'MOCK_NOT_FOUND',
-        error: { message: 'MOCK_NOT_FOUND', url: req.url },
-      })
-  );
+  // Unknown mock route -> 404 (สำคัญ: ต้อง return เสมอ)
+  return notFound(req.url);
 };

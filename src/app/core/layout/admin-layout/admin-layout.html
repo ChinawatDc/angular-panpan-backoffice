@@ -1,7 +1,10 @@
 <div class="admin-shell">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="logo">🦔</div>
+      <div class="logo">
+        <lucide-icon [img]="ShieldIcon" size="22"></lucide-icon>
+      </div>
+
       <div class="meta">
         <div class="name">Panpan</div>
         <div class="sub">Backoffice</div>
@@ -16,22 +19,35 @@
 
     <nav class="nav">
       <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <lucide-icon [img]="DashboardIcon" size="18"></lucide-icon>
         Dashboard
       </a>
 
-      <button type="button" class="logout" (click)="logout()">Logout</button>
+      <!-- ✅ Users -->
+      <a routerLink="/admin/users" routerLinkActive="active">
+        <lucide-icon [img]="UsersIcon" size="18"></lucide-icon>
+        Users
+      </a>
+
+      <button type="button" class="logout" (click)="logout()">
+        <lucide-icon [img]="LogoutIcon" size="18"></lucide-icon>
+        Logout
+      </button>
     </nav>
 
-    <div class="hint">
-      <small>Day 1 Skeleton • /admin</small>
-    </div>
+
+
+    <app-footer text="Panpan Backoffice • Secure Admin"></app-footer>
   </aside>
 
   <main class="main">
     <header class="topbar">
       <div class="title">Admin Area</div>
       <div class="actions">
-        <span class="pill">Mock Mode</span>
+        <span class="pill" [class.good]="auth.isAuthenticated()" [class.warn]="!auth.isAuthenticated()">
+          {{ auth.isAuthenticated() ? 'Signed in' : 'Guest' }}
+        </span>
+
       </div>
     </header>
 

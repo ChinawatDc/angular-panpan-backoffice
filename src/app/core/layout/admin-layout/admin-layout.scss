@@ -66,6 +66,17 @@
   }
 }
 
+.nav a,
+.nav .logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav lucide-icon {
+  opacity: 0.85;
+}
+
 .hint {
   opacity: 0.75;
 }
