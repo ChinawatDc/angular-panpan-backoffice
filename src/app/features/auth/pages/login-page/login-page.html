@@ -1,0 +1,24 @@
+<div class="login">
+  <h2>Login</h2>
+  <p class="muted">Day 2: ใช้ Auth Service + Token Storage + Guard</p>
+
+  <label>
+    <span>Email</span>
+    <input [(ngModel)]="email" type="email" placeholder="admin@panpan.dev" />
+  </label>
+
+  <label>
+    <span>Password</span>
+    <input [(ngModel)]="password" type="password" placeholder="1234" />
+  </label>
+
+  <button (click)="login()" [disabled]="auth.loading()">
+    {{ auth.loading() ? 'Logging in...' : 'Login' }}
+  </button>
+
+  <p class="error" *ngIf="error">{{ error }}</p>
+
+  <p class="hint">
+    Demo: <b>admin@panpan.dev</b> / <b>1234</b>
+  </p>
+</div>

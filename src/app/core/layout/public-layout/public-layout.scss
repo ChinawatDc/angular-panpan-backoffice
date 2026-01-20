@@ -1,0 +1,44 @@
+.public-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(180deg, #0b1220 0%, #0a0f1a 100%);
+  color: #e5e7eb;
+}
+
+.public-card {
+  width: min(520px, 100%);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.8);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+
+  .logo {
+    font-size: 28px;
+  }
+
+  h1 {
+    font-size: 18px;
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+    opacity: 0.7;
+    font-size: 12px;
+  }
+}
+
+.footer {
+  margin-top: 16px;
+  opacity: 0.65;
+}

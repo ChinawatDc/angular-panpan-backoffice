@@ -1,0 +1,42 @@
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo">🦔</div>
+      <div class="meta">
+        <div class="name">Panpan</div>
+        <div class="sub">Backoffice</div>
+      </div>
+    </div>
+
+    <div class="hint">
+      <small>
+        {{ auth.user()?.name }} • {{ auth.user()?.email }}
+      </small>
+    </div>
+
+    <nav class="nav">
+      <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        Dashboard
+      </a>
+
+      <button type="button" class="logout" (click)="logout()">Logout</button>
+    </nav>
+
+    <div class="hint">
+      <small>Day 1 Skeleton • /admin</small>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="title">Admin Area</div>
+      <div class="actions">
+        <span class="pill">Mock Mode</span>
+      </div>
+    </header>
+
+    <section class="content">
+      <router-outlet></router-outlet>
+    </section>
+  </main>
+</div>

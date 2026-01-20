@@ -1,0 +1,48 @@
+<div class="dash">
+  <h2>Dashboard</h2>
+  <p class="muted">
+    Day 3: HttpClient → /api/me, /api/dashboard/summary (Mock API) <br />
+    ถ้า token หมดอายุ จะ 401 → Interceptor จะ refresh แล้ว retry ให้เอง
+  </p>
+
+  <button (click)="loadAll()" [disabled]="loading()">Reload</button>
+
+  <p *ngIf="loading()" class="muted" style="margin-top:10px">Loading...</p>
+  <p *ngIf="error()" style="color:#ef4444; margin-top:10px">
+    Error: {{ error() }}
+  </p>
+
+  <div class="card" style="margin-top:12px" *ngIf="me() as u">
+    <div class="row">
+      <div class="k">User</div>
+      <div class="v">{{ u.name }}</div>
+    </div>
+    <div class="row">
+      <div class="k">Email</div>
+      <div class="v">{{ u.email }}</div>
+    </div>
+    <div class="row">
+      <div class="k">Roles</div>
+      <div class="v">{{ u.roles.join(', ') }}</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px" *ngIf="summary() as s">
+    <div class="row">
+      <div class="k">Status</div>
+      <div class="v ok">{{ s.status }}</div>
+    </div>
+    <div class="row">
+      <div class="k">Mode</div>
+      <div class="v">{{ s.mode }}</div>
+    </div>
+    <div class="row">
+      <div class="k">Active Users</div>
+      <div class="v">{{ s.activeUsers }}</div>
+    </div>
+    <div class="row">
+      <div class="k">Server Time</div>
+      <div class="v">{{ s.serverTime }}</div>
+    </div>
+  </div>
+</div>

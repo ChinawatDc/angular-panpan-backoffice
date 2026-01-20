@@ -1,0 +1,49 @@
+.login {
+  display: grid;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+  .muted {
+    margin: 0;
+    opacity: 0.75;
+    font-size: 13px;
+  }
+
+  label {
+    display: grid;
+    gap: 6px;
+
+    span {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    input {
+      height: 42px;
+      border-radius: 10px;
+      padding: 0 12px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(15, 23, 42, 0.35);
+      color: #e5e7eb;
+      outline: none;
+    }
+  }
+
+  button {
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid rgba(59, 130, 246, 0.55);
+    background: rgba(59, 130, 246, 0.18);
+    color: #e5e7eb;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  button:hover {
+    background: rgba(59, 130, 246, 0.28);
+  }
+}
