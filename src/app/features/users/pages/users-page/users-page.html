@@ -13,12 +13,12 @@
 
     <div class="head-actions">
       <!-- ✅ Create -->
-      <button class="btn primary" (click)="openCreate()">
+      <button class="btn primary" (click)="facade.openCreate()">
         <lucide-icon [img]="PlusIcon" size="16"></lucide-icon>
         Create User
       </button>
 
-      <button class="btn" (click)="load()" [disabled]="loading()">
+      <button class="btn" (click)="facade.load()" [disabled]="facade.loading()">
         <lucide-icon [img]="RefreshIcon" size="16"></lucide-icon>
         Refresh
       </button>
@@ -29,36 +29,36 @@
   <div class="toolbar card">
     <div class="search">
       <lucide-icon class="search-ic" [img]="SearchIcon" size="16"></lucide-icon>
-      <input [ngModel]="q()" (ngModelChange)="setQuery($event)" (keyup.enter)="search()"
+      <input [value]="facade.q()" (input)="facade.setQuery($any($event.target).value)" (keyup.enter)="facade.search()"
         placeholder="Search by name or email..." />
     </div>
 
     <div class="meta">
-      <span class="badge">{{ rangeText() }}</span>
-      <span class="badge">Page {{ page() }} / {{ totalPages() }}</span>
-      <button class="btn ghost" (click)="search()" [disabled]="loading()">Search</button>
-      <button class="btn ghost" (click)="reset()" [disabled]="loading()">Reset</button>
+      <span class="badge">{{ facade.rangeText() }}</span>
+      <span class="badge">Page {{ facade.page() }} / {{ facade.totalPages() }}</span>
+      <button class="btn ghost" (click)="facade.search()" [disabled]="facade.loading()">Search</button>
+      <button class="btn ghost" (click)="facade.reset()" [disabled]="facade.loading()">Reset</button>
     </div>
   </div>
 
-  <div class="error" *ngIf="error()">{{ error() }}</div>
+  <div class="error" *ngIf="facade.error()">{{ facade.error() }}</div>
 
   <!-- Table Card -->
   <div class="card table-card">
-    <div class="skeleton" *ngIf="loading()">
+    <div class="skeleton" *ngIf="facade.loading()">
       <div class="sk-row" *ngFor="let _ of [1,2,3,4,5,6]"></div>
     </div>
 
-    <div class="empty" *ngIf="!loading() && !error() && items().length === 0">
+    <div class="empty" *ngIf="!facade.loading() && !facade.error() && facade.items().length === 0">
       <div class="empty-ic">
         <lucide-icon [img]="UsersIcon" size="28"></lucide-icon>
       </div>
       <div class="empty-title">No users found</div>
       <div class="empty-sub">Try another keyword or reset the search.</div>
-      <button class="btn" (click)="reset()">Reset</button>
+      <button class="btn" (click)="facade.reset()">Reset</button>
     </div>
 
-    <table *ngIf="!loading() && !error() && items().length > 0">
+    <table *ngIf="!facade.loading() && !facade.error() && facade.items().length > 0">
       <thead>
         <tr>
           <th>Name</th>
@@ -69,7 +69,7 @@
       </thead>
 
       <tbody>
-        <tr *ngFor="let u of items()">
+        <tr *ngFor="let u of facade.items(); trackBy: trackById">
           <td>
             <div class="cell-main">
               <div class="avatar">{{ u.name.slice(0, 1).toUpperCase() }}</div>
@@ -91,11 +91,12 @@
 
           <!-- ✅ เพิ่มอันนี้ -->
           <td class="td-actions">
-            <button class="icon-btn sm" (click)="openEdit(u)" type="button" title="Edit">
+            <button class="icon-btn sm" (click)="facade.openEdit(u)" type="button" title="Edit">
+
               <lucide-icon [img]="EditIcon" size="16"></lucide-icon>
             </button>
 
-            <button class="icon-btn sm danger" (click)="openDelete(u)" type="button" title="Delete">
+            <button class="icon-btn sm danger" (click)="facade.requestDelete(u)" type="button" title="Delete">
               <lucide-icon [img]="DeleteIcon" size="16"></lucide-icon>
             </button>
           </td>
@@ -107,122 +108,23 @@
 
   <!-- Pager -->
   <div class="pager">
-    <button class="btn ghost" (click)="prev()" [disabled]="!canPrev()">
+    <button class="btn ghost" (click)="facade.prev()" [disabled]="!facade.canPrev()">
       <lucide-icon [img]="PrevIcon" size="16"></lucide-icon>
       Prev
     </button>
 
     <div class="pager-mid">
-      <span class="badge">{{ rangeText() }}</span>
+      <span class="badge">{{ facade.rangeText() }}</span>
     </div>
 
-    <button class="btn ghost" (click)="next()" [disabled]="!canNext()">
+    <button class="btn ghost" (click)="facade.next()" [disabled]="!facade.canNext()">
       Next
       <lucide-icon [img]="NextIcon" size="16"></lucide-icon>
     </button>
   </div>
 
-  <div class="modal-backdrop" *ngIf="modalOpen()" (click)="closeModal()"></div>
-
-  <div class="modal" *ngIf="modalOpen()" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-    <div class="modal-head">
-      <div class="modal-title">
-        <div class="m-ic">
-          <lucide-icon [img]="modalMode() === 'create' ? PlusIcon : EditIcon" size="18"></lucide-icon>
-        </div>
-        <div>
-          <div class="m-h">{{ modalMode() === 'create' ? 'Create User' : 'Edit User' }}</div>
-          <div class="m-sub">
-            {{ modalMode() === 'create' ? 'Add a new user to the system' : 'Update user information' }}
-          </div>
-        </div>
-      </div>
-
-      <button class="icon-btn" (click)="closeModal()" [disabled]="saving()">
-        <lucide-icon [img]="CloseIcon" size="18"></lucide-icon>
-      </button>
-    </div>
-
-    <div class="modal-body">
-      <div class="field">
-        <label>
-          <span class="lbl">
-            <lucide-icon [img]="UserIcon" size="14"></lucide-icon>
-            Name
-          </span>
-          <input [(ngModel)]="form.name" placeholder="Full name" />
-        </label>
-      </div>
-
-      <div class="field">
-        <label>
-          <span class="lbl">
-            <lucide-icon [img]="MailIcon" size="14"></lucide-icon>
-            Email
-          </span>
-          <input [(ngModel)]="form.email" placeholder="name@company.com" />
-        </label>
-      </div>
-
-      <div class="field">
-        <label>
-          <span class="lbl">
-            <lucide-icon [img]="RoleIcon" size="14"></lucide-icon>
-            Role
-          </span>
-          <select [(ngModel)]="form.role">
-            <option value="staff">staff</option>
-            <option value="admin">admin</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="error" *ngIf="formError()">{{ formError() }}</div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn ghost" (click)="closeModal()" [disabled]="saving()">Cancel</button>
-      <button class="btn primary" (click)="submitModal()" [disabled]="saving()">
-        <span *ngIf="!saving()">{{ modalMode() === 'create' ? 'Create' : 'Save' }}</span>
-        <span *ngIf="saving()">{{ modalMode() === 'create' ? 'Creating...' : 'Saving...' }}</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="modal-backdrop" *ngIf="deleteOpen()" (click)="closeDelete()"></div>
-
-  <div class="modal danger" *ngIf="deleteOpen()" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-    <div class="modal-head">
-      <div class="modal-title">
-        <div class="m-ic warn">
-          <lucide-icon [img]="WarnIcon" size="18"></lucide-icon>
-        </div>
-        <div>
-          <div class="m-h">Delete user</div>
-          <div class="m-sub">This action cannot be undone</div>
-        </div>
-      </div>
-
-      <button class="icon-btn" (click)="closeDelete()" [disabled]="deleting()">
-        <lucide-icon [img]="CloseIcon" size="18"></lucide-icon>
-      </button>
-    </div>
-
-    <div class="modal-body" *ngIf="deleteTarget() as u">
-      <div class="confirm-text">
-        Delete <b>{{ u.name }}</b> (<span>{{ u.email }}</span>) ?
-      </div>
-
-      <div class="error" *ngIf="deleteError()">{{ deleteError() }}</div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn ghost" (click)="closeDelete()" [disabled]="deleting()">Cancel</button>
-      <button class="btn danger" (click)="confirmDelete()" [disabled]="deleting()">
-        <span *ngIf="!deleting()">Delete</span>
-        <span *ngIf="deleting()">Deleting...</span>
-      </button>
-    </div>
-  </div>
+  <app-user-modal [open]="facade.modalOpen()" [mode]="facade.modalMode()" [initial]="facade.editTarget()"
+    [saving]="facade.saving()" [error]="facade.formError()" (submit)="facade.submit($event)"
+    (closed)="facade.closeModal()" />
 
 </div>

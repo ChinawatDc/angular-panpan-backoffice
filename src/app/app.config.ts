@@ -4,6 +4,7 @@ import { routes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { mockApiInterceptor } from './core/http/mock-api.interceptor';
+import { ENV } from './core/config/env';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,6 +16,8 @@ export const appConfig: ApplicationConfig = {
         anchorScrolling: 'enabled',
       }),
     ),
-    provideHttpClient(withInterceptors([authInterceptor, mockApiInterceptor])),
+    provideHttpClient(
+      withInterceptors(ENV.mockApi ? [authInterceptor, mockApiInterceptor] : [authInterceptor])
+    ),
   ],
 };

@@ -1,0 +1,81 @@
+<div class="modal-backdrop" *ngIf="open" (click)="close()"></div>
+
+<div class="modal" *ngIf="open" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+  <div class="modal-head">
+    <div class="modal-title">
+      <div class="m-ic">
+        <lucide-icon [img]="mode === 'create' ? PlusIcon : EditIcon" size="18"></lucide-icon>
+      </div>
+      <div>
+        <div class="m-h">{{ mode === 'create' ? 'Create User' : 'Edit User' }}</div>
+        <div class="m-sub">
+          {{ mode === 'create' ? 'Add a new user to the system' : 'Update user information' }}
+        </div>
+      </div>
+    </div>
+
+    <button class="icon-btn" (click)="close()" [disabled]="saving">
+      <lucide-icon [img]="CloseIcon" size="18"></lucide-icon>
+    </button>
+  </div>
+
+  <form class="modal-body" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="field">
+      <label>
+        <span class="lbl">
+          <lucide-icon [img]="UserIcon" size="14"></lucide-icon>
+          Name
+        </span>
+        <input formControlName="name" placeholder="Full name" />
+      </label>
+      <div class="error" *ngIf="form.controls.name.touched && form.controls.name.errors?.['required']">
+        Name is required
+      </div>
+      <div class="error" *ngIf="form.controls.name.touched && form.controls.name.errors?.['minlength']">
+        Name must be at least 2 characters
+      </div>
+    </div>
+
+    <div class="field">
+      <label>
+        <span class="lbl">
+          <lucide-icon [img]="MailIcon" size="14"></lucide-icon>
+          Email
+        </span>
+        <input formControlName="email" placeholder="name@company.com" />
+      </label>
+      <div class="error" *ngIf="form.controls.email.touched && form.controls.email.errors?.['required']">
+        Email is required
+      </div>
+      <div class="error" *ngIf="form.controls.email.touched && form.controls.email.errors?.['email']">
+        Email is invalid
+      </div>
+    </div>
+
+    <div class="field">
+      <label>
+        <span class="lbl">
+          <lucide-icon [img]="RoleIcon" size="14"></lucide-icon>
+          Role
+        </span>
+        <select formControlName="role">
+          <option value="staff">staff</option>
+          <option value="admin">admin</option>
+        </select>
+      </label>
+      <div class="error" *ngIf="form.controls.role.touched && form.controls.role.errors?.['required']">
+        Role is required
+      </div>
+    </div>
+
+    <div class="error" *ngIf="error">{{ error }}</div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" type="button" (click)="close()" [disabled]="saving">Cancel</button>
+      <button class="btn primary" type="submit" [disabled]="saving || form.invalid">
+        <span *ngIf="!saving">{{ mode === 'create' ? 'Create' : 'Save' }}</span>
+        <span *ngIf="saving">{{ mode === 'create' ? 'Creating...' : 'Saving...' }}</span>
+      </button>
+    </div>
+  </form>
+</div>

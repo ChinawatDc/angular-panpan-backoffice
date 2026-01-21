@@ -1,9 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { ENV } from '../../../core/config/env';
-
-export type UserRole = 'admin' | 'staff';
-export type UserRow = { id: string; name: string; email: string; role: UserRole };
+import { UserFormPayload, UserRow } from '../users.types';
 
 export class UsersApi {
   private http = inject(HttpClient);
@@ -22,11 +20,11 @@ export class UsersApi {
     }>(`${ENV.apiBaseUrl}/users`, { params });
   }
 
-  create(payload: { name: string; email: string; role: UserRole }) {
+  create(payload: UserFormPayload) {
     return this.http.post<UserRow>(`${ENV.apiBaseUrl}/users`, payload);
   }
 
-  update(id: string, payload: { name: string; email: string; role: UserRole }) {
+  update(id: string, payload: UserFormPayload) {
     return this.http.put<UserRow>(`${ENV.apiBaseUrl}/users/${id}`, payload);
   }
 

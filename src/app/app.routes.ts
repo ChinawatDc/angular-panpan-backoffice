@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { PublicLayout } from './core/layout/public-layout/public-layout';
 import { AdminLayout } from './core/layout/admin-layout/admin-layout';
 import { authGuard } from './core/auth/auth.guard';
+import { roleGuard } from './core/auth/role.guard';
 export const routes: Routes = [
   // default
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -34,6 +35,7 @@ export const routes: Routes = [
       },
       {
         path: 'users',
+        canActivate: [authGuard, roleGuard('admin')],
         loadChildren: () =>
           import('./features/users/users.routes')
             .then(m => m.USERS_ROUTES),
