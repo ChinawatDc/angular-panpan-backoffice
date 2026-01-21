@@ -64,6 +64,7 @@
           <th>Name</th>
           <th>Email</th>
           <th style="width: 140px;">Role</th>
+          <th class="th-actions" style="width: 120px;">Actions</th>
         </tr>
       </thead>
 
@@ -78,15 +79,29 @@
               </div>
             </div>
           </td>
+
           <td class="primary-text">{{ u.email }}</td>
+
           <td>
             <span class="pill" [class.good]="u.role === 'admin'">
               <lucide-icon [img]="RoleIcon" size="14"></lucide-icon>
               {{ u.role }}
             </span>
           </td>
+
+          <!-- ✅ เพิ่มอันนี้ -->
+          <td class="td-actions">
+            <button class="icon-btn sm" (click)="openEdit(u)" type="button" title="Edit">
+              <lucide-icon [img]="EditIcon" size="16"></lucide-icon>
+            </button>
+
+            <button class="icon-btn sm danger" (click)="openDelete(u)" type="button" title="Delete">
+              <lucide-icon [img]="DeleteIcon" size="16"></lucide-icon>
+            </button>
+          </td>
         </tr>
       </tbody>
+
     </table>
   </div>
 
@@ -107,53 +122,107 @@
     </button>
   </div>
 
-  <!-- ✅ Create Modal -->
-  <div class="modal-backdrop" *ngIf="showCreate()" (click)="closeCreate()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal-head">
-        <div class="modal-title">
-          <div class="modal-ic">
-            <lucide-icon [img]="PlusIcon" size="18"></lucide-icon>
-          </div>
-          <div>
-            <div class="t1">Create User</div>
-            <div class="t2">Add a new user to the system</div>
+  <div class="modal-backdrop" *ngIf="modalOpen()" (click)="closeModal()"></div>
+
+  <div class="modal" *ngIf="modalOpen()" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div class="modal-title">
+        <div class="m-ic">
+          <lucide-icon [img]="modalMode() === 'create' ? PlusIcon : EditIcon" size="18"></lucide-icon>
+        </div>
+        <div>
+          <div class="m-h">{{ modalMode() === 'create' ? 'Create User' : 'Edit User' }}</div>
+          <div class="m-sub">
+            {{ modalMode() === 'create' ? 'Add a new user to the system' : 'Update user information' }}
           </div>
         </div>
-
-        <button class="icon-btn" (click)="closeCreate()" [disabled]="createLoading()">
-          <lucide-icon [img]="CloseIcon" size="18"></lucide-icon>
-        </button>
       </div>
 
-      <div class="modal-body">
-        <label class="field">
-          <span>Name</span>
-          <input [ngModel]="formName()" (ngModelChange)="formName.set($event)" placeholder="e.g. John Doe" />
-        </label>
+      <button class="icon-btn" (click)="closeModal()" [disabled]="saving()">
+        <lucide-icon [img]="CloseIcon" size="18"></lucide-icon>
+      </button>
+    </div>
 
-        <label class="field">
-          <span>Email</span>
-          <input [ngModel]="formEmail()" (ngModelChange)="formEmail.set($event)" placeholder="e.g. john@demo.dev" />
+    <div class="modal-body">
+      <div class="field">
+        <label>
+          <span class="lbl">
+            <lucide-icon [img]="UserIcon" size="14"></lucide-icon>
+            Name
+          </span>
+          <input [(ngModel)]="form.name" placeholder="Full name" />
         </label>
+      </div>
 
-        <label class="field">
-          <span>Role</span>
-          <select [ngModel]="formRole()" (ngModelChange)="formRole.set($event)">
+      <div class="field">
+        <label>
+          <span class="lbl">
+            <lucide-icon [img]="MailIcon" size="14"></lucide-icon>
+            Email
+          </span>
+          <input [(ngModel)]="form.email" placeholder="name@company.com" />
+        </label>
+      </div>
+
+      <div class="field">
+        <label>
+          <span class="lbl">
+            <lucide-icon [img]="RoleIcon" size="14"></lucide-icon>
+            Role
+          </span>
+          <select [(ngModel)]="form.role">
             <option value="staff">staff</option>
             <option value="admin">admin</option>
           </select>
         </label>
-
-        <div class="error" *ngIf="createError()">{{ createError() }}</div>
       </div>
 
-      <div class="modal-foot">
-        <button class="btn ghost" (click)="closeCreate()" [disabled]="createLoading()">Cancel</button>
-        <button class="btn primary" (click)="submitCreate()" [disabled]="createLoading()">
-          {{ createLoading() ? 'Creating...' : 'Create' }}
-        </button>
-      </div>
+      <div class="error" *ngIf="formError()">{{ formError() }}</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" (click)="closeModal()" [disabled]="saving()">Cancel</button>
+      <button class="btn primary" (click)="submitModal()" [disabled]="saving()">
+        <span *ngIf="!saving()">{{ modalMode() === 'create' ? 'Create' : 'Save' }}</span>
+        <span *ngIf="saving()">{{ modalMode() === 'create' ? 'Creating...' : 'Saving...' }}</span>
+      </button>
     </div>
   </div>
+
+  <div class="modal-backdrop" *ngIf="deleteOpen()" (click)="closeDelete()"></div>
+
+  <div class="modal danger" *ngIf="deleteOpen()" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div class="modal-title">
+        <div class="m-ic warn">
+          <lucide-icon [img]="WarnIcon" size="18"></lucide-icon>
+        </div>
+        <div>
+          <div class="m-h">Delete user</div>
+          <div class="m-sub">This action cannot be undone</div>
+        </div>
+      </div>
+
+      <button class="icon-btn" (click)="closeDelete()" [disabled]="deleting()">
+        <lucide-icon [img]="CloseIcon" size="18"></lucide-icon>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="deleteTarget() as u">
+      <div class="confirm-text">
+        Delete <b>{{ u.name }}</b> (<span>{{ u.email }}</span>) ?
+      </div>
+
+      <div class="error" *ngIf="deleteError()">{{ deleteError() }}</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" (click)="closeDelete()" [disabled]="deleting()">Cancel</button>
+      <button class="btn danger" (click)="confirmDelete()" [disabled]="deleting()">
+        <span *ngIf="!deleting()">Delete</span>
+        <span *ngIf="deleting()">Deleting...</span>
+      </button>
+    </div>
+  </div>
+
 </div>

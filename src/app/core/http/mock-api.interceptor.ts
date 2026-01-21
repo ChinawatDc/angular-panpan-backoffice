@@ -17,6 +17,40 @@ const MOCK_USER = {
   roles: ['admin'],
 };
 
+type UserRow = { id: string; name: string; email: string; role: 'admin' | 'staff' };
+
+const USERS_DB: UserRow[] = Array.from({ length: 42 }).map((_, i) => ({
+  id: `u_${i + 1}`,
+  name: `User ${i + 1}`,
+  email: `user${i + 1}@demo.dev`,
+  role: i % 3 === 0 ? 'admin' : 'staff',
+}));
+
+let NEXT_ID = 43;
+
+function badRequest(message: string): Observable<never> {
+  return throwError(() => new HttpErrorResponse({ status: 400, error: { message } }));
+}
+
+function conflict(message: string): Observable<never> {
+  return throwError(() => new HttpErrorResponse({ status: 409, error: { message } }));
+}
+
+function notFoundUser(): Observable<never> {
+  return throwError(() => new HttpErrorResponse({ status: 404, error: { message: 'USER_NOT_FOUND' } }));
+}
+
+function isEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function getIdFromUrl(url: string) {
+  // รองรับ /api/users/:id (ไม่มี query)
+  const parts = url.split('?')[0].split('/');
+  return parts[parts.length - 1] || '';
+}
+
+
 function unauthorized(msg = 'UNAUTHORIZED'): Observable<never> {
   return throwError(
     () =>
@@ -106,16 +140,13 @@ export const mockApiInterceptor: HttpInterceptorFn = (
     const page = +(params.get('page') ?? 1);
     const limit = +(params.get('limit') ?? 10);
 
-    const all = Array.from({ length: 42 }).map((_, i) => ({
-      id: `u_${i + 1}`,
-      name: `User ${i + 1}`,
-      email: `user${i + 1}@demo.dev`,
-      role: i % 3 === 0 ? 'admin' : 'staff',
-    }));
+    const all = USERS_DB;
+
 
     const filtered = all.filter(
       (u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
     );
+
 
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(50, Math.max(1, limit));
@@ -134,6 +165,66 @@ export const mockApiInterceptor: HttpInterceptorFn = (
       })
     ).pipe(delay(300));
   }
+
+  // POST /api/users (protected)
+  if (req.method === 'POST' && req.url === `${ENV.apiBaseUrl}/users`) {
+    const err = requireAuth();
+    if (err) return err;
+
+    const body: any = req.body ?? {};
+    const name = String(body.name ?? '').trim();
+    const email = String(body.email ?? '').trim().toLowerCase();
+    const role = (body.role === 'admin' ? 'admin' : 'staff') as 'admin' | 'staff';
+
+    if (!name) return badRequest('NAME_REQUIRED');
+    if (!email || !isEmail(email)) return badRequest('EMAIL_INVALID');
+    if (USERS_DB.some((u) => u.email === email)) return conflict('EMAIL_ALREADY_EXISTS');
+
+    const created: UserRow = { id: `u_${NEXT_ID++}`, name, email, role };
+    USERS_DB.unshift(created);
+
+    return of(new HttpResponse({ status: 201, body: created })).pipe(delay(250));
+  }
+
+
+  // PUT /api/users/:id (protected)
+  if (req.method === 'PUT' && req.url.startsWith(`${ENV.apiBaseUrl}/users/`)) {
+    const err = requireAuth();
+    if (err) return err;
+
+    const id = getIdFromUrl(req.url);
+    const idx = USERS_DB.findIndex((u) => u.id === id);
+    if (idx < 0) return notFoundUser();
+
+    const body: any = req.body ?? {};
+    const name = String(body.name ?? '').trim();
+    const email = String(body.email ?? '').trim().toLowerCase();
+    const role = (body.role === 'admin' ? 'admin' : 'staff') as 'admin' | 'staff';
+
+    if (!name) return badRequest('NAME_REQUIRED');
+    if (!email || !isEmail(email)) return badRequest('EMAIL_INVALID');
+    if (USERS_DB.some((u) => u.email === email && u.id !== id)) return conflict('EMAIL_ALREADY_EXISTS');
+
+    USERS_DB[idx] = { ...USERS_DB[idx], name, email, role };
+
+    return of(new HttpResponse({ status: 200, body: USERS_DB[idx] })).pipe(delay(220));
+  }
+
+
+  // DELETE /api/users/:id (protected)
+  if (req.method === 'DELETE' && req.url.startsWith(`${ENV.apiBaseUrl}/users/`)) {
+    const err = requireAuth();
+    if (err) return err;
+
+    const id = getIdFromUrl(req.url);
+    const idx = USERS_DB.findIndex((u) => u.id === id);
+    if (idx < 0) return notFoundUser();
+
+    USERS_DB.splice(idx, 1);
+
+    return of(new HttpResponse({ status: 200, body: { ok: true } })).pipe(delay(200));
+  }
+
 
   // Unknown mock route -> 404 (สำคัญ: ต้อง return เสมอ)
   return notFound(req.url);

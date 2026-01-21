@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, signal } from '@angular/core';
-import { UsersApi } from '../../data-access/users.api';
 import { FormsModule } from '@angular/forms';
+import { UsersApi, UserRow, UserRole } from '../../data-access/users.api';
 import {
   LucideAngularModule,
   Users,
@@ -12,9 +12,14 @@ import {
   ShieldCheck,
   Plus,
   X,
+  Mail,
+  User,
+  Pencil,
+  Trash2,
+  TriangleAlert,
 } from 'lucide-angular';
 
-type UserRow = { id: string; name: string; email: string; role: 'admin' | 'staff' };
+type Mode = 'create' | 'edit';
 
 @Component({
   selector: 'app-users-page',
@@ -32,8 +37,15 @@ export class UsersPage {
   readonly PrevIcon = ChevronLeft;
   readonly NextIcon = ChevronRight;
   readonly RoleIcon = ShieldCheck;
+
   readonly PlusIcon = Plus;
   readonly CloseIcon = X;
+  readonly MailIcon = Mail;
+  readonly UserIcon = User;
+
+  readonly EditIcon = Pencil;
+  readonly DeleteIcon = Trash2;
+  readonly WarnIcon = TriangleAlert;
 
   loading = signal(false);
   error = signal('');
@@ -43,6 +55,24 @@ export class UsersPage {
 
   items = signal<UserRow[]>([]);
   total = signal(0);
+
+  // modal (create/edit)
+  modalOpen = signal(false);
+  modalMode = signal<Mode>('create');
+  saving = signal(false);
+  formError = signal('');
+  editingId = signal<string>('');
+  form = {
+    name: '',
+    email: '',
+    role: 'staff' as UserRole,
+  };
+
+  // delete confirm
+  deleteOpen = signal(false);
+  deleting = signal(false);
+  deleteError = signal('');
+  deleteTarget = signal<UserRow | null>(null);
 
   totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.limit)));
   canPrev = computed(() => this.page() > 1 && !this.loading());
@@ -56,15 +86,6 @@ export class UsersPage {
     return `${start}-${end} of ${t}`;
   });
 
-  // ===== Create Modal =====
-  showCreate = signal(false);
-  createLoading = signal(false);
-  createError = signal('');
-
-  formName = signal('');
-  formEmail = signal('');
-  formRole = signal<'admin' | 'staff'>('staff');
-
   constructor(private api: UsersApi) {
     this.load();
   }
@@ -75,7 +96,7 @@ export class UsersPage {
 
     this.api.list(this.q(), this.page(), this.limit).subscribe({
       next: (res) => {
-        this.items.set(res.items as UserRow[]);
+        this.items.set(res.items);
         this.total.set(res.total);
         this.loading.set(false);
       },
@@ -113,43 +134,97 @@ export class UsersPage {
     this.load();
   }
 
-  // ===== Modal Actions =====
+  // ===== Create/Edit Modal =====
   openCreate() {
-    this.createError.set('');
-    this.formName.set('');
-    this.formEmail.set('');
-    this.formRole.set('staff');
-    this.showCreate.set(true);
+    this.modalMode.set('create');
+    this.editingId.set('');
+    this.formError.set('');
+    this.form = { name: '', email: '', role: 'staff' };
+    this.modalOpen.set(true);
   }
 
-  closeCreate() {
-    if (this.createLoading()) return;
-    this.showCreate.set(false);
+  openEdit(u: UserRow) {
+    this.modalMode.set('edit');
+    this.editingId.set(u.id);
+    this.formError.set('');
+    this.form = { name: u.name, email: u.email, role: u.role };
+    this.modalOpen.set(true);
   }
 
-  async submitCreate() {
-    this.createError.set('');
+  closeModal() {
+    if (this.saving()) return;
+    this.modalOpen.set(false);
+  }
 
-    const name = this.formName().trim();
-    const email = this.formEmail().trim().toLowerCase();
-    const role = this.formRole();
+  private isValidEmail(email: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
 
-    if (!name) return this.createError.set('กรุณากรอกชื่อ');
-    if (!email || !email.includes('@')) return this.createError.set('กรุณากรอกอีเมลให้ถูกต้อง');
+  submitModal() {
+    this.formError.set('');
 
-    this.createLoading.set(true);
+    const name = this.form.name.trim();
+    const email = this.form.email.trim().toLowerCase();
+    const role = this.form.role;
 
-    this.api.create({ name, email, role }).subscribe({
+    if (!name) return this.formError.set('กรุณากรอกชื่อ');
+    if (!email || !this.isValidEmail(email)) return this.formError.set('อีเมลไม่ถูกต้อง');
+
+    this.saving.set(true);
+
+    const mode = this.modalMode();
+    const req$ =
+      mode === 'create'
+        ? this.api.create({ name, email, role })
+        : this.api.update(this.editingId(), { name, email, role });
+
+    req$.subscribe({
       next: () => {
-        this.createLoading.set(false);
-        this.showCreate.set(false);
-        // refresh list เพื่อเห็น user ใหม่
-        this.page.set(1);
+        this.saving.set(false);
+        this.modalOpen.set(false);
         this.load();
       },
       error: (e) => {
-        this.createLoading.set(false);
-        this.createError.set(e?.error?.message ?? 'CREATE_FAILED');
+        this.saving.set(false);
+        this.formError.set(e?.error?.message ?? (mode === 'create' ? 'CREATE_FAILED' : 'UPDATE_FAILED'));
+      },
+    });
+  }
+
+  // ===== Delete Confirm =====
+  openDelete(u: UserRow) {
+    this.deleteError.set('');
+    this.deleteTarget.set(u);
+    this.deleteOpen.set(true);
+  }
+
+  closeDelete() {
+    if (this.deleting()) return;
+    this.deleteOpen.set(false);
+  }
+
+  confirmDelete() {
+    const target = this.deleteTarget();
+    if (!target) return;
+
+    this.deleteError.set('');
+    this.deleting.set(true);
+
+    this.api.remove(target.id).subscribe({
+      next: () => {
+        this.deleting.set(false);
+        this.deleteOpen.set(false);
+
+        // ถ้าลบแล้วหน้าว่าง (เช่นอยู่หน้าสุดท้าย) ให้ถอยหน้ากลับแบบฉลาด
+        const remain = Math.max(0, this.total() - 1);
+        const maxPageAfter = Math.max(1, Math.ceil(remain / this.limit));
+        if (this.page() > maxPageAfter) this.page.set(maxPageAfter);
+
+        this.load();
+      },
+      error: (e) => {
+        this.deleting.set(false);
+        this.deleteError.set(e?.error?.message ?? 'DELETE_FAILED');
       },
     });
   }
